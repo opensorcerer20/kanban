@@ -1,0 +1,13 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #fafafa; }
+.board { display: flex; width: 100%; gap: 12px; padding: 12px; }
+.column { flex: 1; background: #f2f2f2; border: 1px solid #e0e0e0; border-radius: 8px; min-height: 60vh; display: flex; flex-direction: column; }
+.column h2 { margin: 8px 8px 0 8px; font-size: 14px; font-weight: 600; }
+.column-content { padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+.card { background: #fff; border: 1px solid #dddddd; border-radius: 6px; padding: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); cursor: grab; }
+.card:active { cursor: grabbing; }
+.column.drag-over { outline: 2px dashed #888; outline-offset: -2px; }
+/* Card content */
+.card-title { font-weight: 600; margin-bottom: 4px; }
+.card-desc { font-size: 12px; color: #555; margin-bottom: 6px; }
+.card-tags { font-size: 12px; color: #333; }

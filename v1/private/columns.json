@@ -1,0 +1,22 @@
+[
+  {
+    "id": "col-ready",
+    "title": "Ready"
+  },
+  {
+    "id": "col-feedback",
+    "title": "Feedback"
+  },
+  {
+    "id": "col-inprogress",
+    "title": "In Progress"
+  },
+  {
+    "id": "col-complete",
+    "title": "Complete"
+  },
+  {
+    "id": "col-posted",
+    "title": "Posted"
+  }
+]

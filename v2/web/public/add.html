@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Cards</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/nav.js" defer></script>
+  <style>
+    .container { max-width: 800px; margin: 24px auto; padding: 0 12px; }
+    textarea { width: 100%; min-height: 200px; font-family: inherit; font-size: 14px; padding: 8px; }
+    .actions { margin-top: 12px; display: flex; gap: 8px; }
+    button { padding: 8px 12px; }
+    .status { margin-top: 12px; font-size: 13px; }
+  </style>
+  <script src="/add.js" defer></script>
+</head>
+<body>
+  <div class="toolbar">
+    <a href="/">Home</a>
+    <a href="/add.html">Add Cards</a>
+  </div>
+  <div class="container">
+    <h1>Add Cards</h1>
+    <p>Paste one title per line. New cards will be added to the Ready column with incremented IDs and ticket IDs.</p>
+      <div class="example-box">
+        <div class="example-title">Example input:</div>
+        <div class="example-content">Fix navbar alignment<br/>
+  Update onboarding docs<br/>
+  Improve error messages</div>
+      </div>
+    <form id="addForm">
+        <textarea id="titles"></textarea>
+      <div class="actions">
+        <button type="submit">Add Cards</button>
+        <button type="button" id="clearBtn">Clear</button>
+      </div>
+      <div class="status" id="status"></div>
+    </form>
+  </div>
+</body>
+</html>

@@ -1,0 +1,52 @@
+[
+  {
+    "id": "1",
+    "title": "Draft outline",
+    "columnId": "col-ready",
+    "ticketId": "PROJ-001",
+    "description": "Four score and seven years ago, our forefathers brought forth upon this continent",
+    "tags": [
+      "one"
+    ]
+  },
+  {
+    "id": "2",
+    "title": "Design review",
+    "columnId": "col-inprogress",
+    "ticketId": "PROJ-002",
+    "description": "Four score and seven years ago, our forefathers brought forth upon this continent",
+    "tags": [
+      "two"
+    ]
+  },
+  {
+    "id": "3",
+    "title": "Implement feature",
+    "columnId": "col-inprogress",
+    "ticketId": "PROJ-003",
+    "description": "Four score and seven years ago, our forefathers brought forth upon this continent",
+    "tags": [
+      "one"
+    ]
+  },
+  {
+    "id": "4",
+    "title": "QA checklist",
+    "columnId": "col-complete",
+    "ticketId": "PROJ-004",
+    "description": "Four score and seven years ago, our forefathers brought forth upon this continent",
+    "tags": [
+      "two"
+    ]
+  },
+  {
+    "id": "5",
+    "title": "Publish post",
+    "columnId": "col-posted",
+    "ticketId": "PROJ-005",
+    "description": "Four score and seven years ago, our forefathers brought forth upon this continent",
+    "tags": [
+      "one"
+    ]
+  }
+]
