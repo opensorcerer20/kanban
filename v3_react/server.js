@@ -1,5 +1,11 @@
 const path = require("path");
-const { readJson, writeJson, runExclusive } = require("./helpers");
+const {
+  readJson,
+  writeJson,
+  runExclusive,
+  ensureDataFiles,
+} = require("./helpers");
+const { applyColumnOrder } = require("./processing");
 const express = require("express");
 
 const app = express();
@@ -44,36 +50,8 @@ app.put("/api/columns/:columnId/order", async (req, res) => {
   }
 
   try {
-    await runExclusive("cards.json", async () => {
-      const cards = await readJson("cards.json");
-      const byId = new Map(cards.map((c) => [String(c.id), c]));
-
-      const movedIdStr = movedCardId != null ? String(movedCardId) : null;
-
-      // Move each card in the list to the target column and set ascending sort order
-      cardIds.forEach((id, idx) => {
-        const card = byId.get(String(id));
-        if (card) {
-          card.columnId = columnId;
-          card.columnSortOrder = idx + 1;
-          if (movedIdStr && String(id) === movedIdStr) {
-            card.updatedAt = new Date().toISOString();
-          }
-        }
-      });
-
-      // Also re-number any remaining cards still in this column that are not in cardIds
-      // ensuring they follow after the provided list (helps if client sends partial list)
-      let nextOrder = cardIds.length + 1;
-      cards.forEach((card) => {
-        if (card.columnId === columnId && !cardIds.includes(String(card.id))) {
-          card.columnSortOrder = nextOrder++;
-        }
-      });
-
-      await writeJson("cards.json", cards);
-    });
-    res.json({ ok: true, columnId, count: cardIds.length });
+    const result = await applyColumnOrder({ columnId, cardIds, movedCardId });
+    res.json({ ok: true, columnId: result.columnId, count: result.count });
   } catch (err) {
     console.error("Error updating column order", err);
     res
@@ -83,6 +61,10 @@ app.put("/api/columns/:columnId/order", async (req, res) => {
 });
 
 if (require.main === module) {
+  // Seed missing data files from samples on server start
+  ensureDataFiles().catch((err) => {
+    console.error("Failed to ensure data files", err);
+  });
   app.listen(PORT, () => {
     console.log(`Kanban v3_react server running at http://localhost:${PORT}`);
   });

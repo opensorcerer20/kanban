@@ -44,9 +44,41 @@ function runExclusive(filename, fn) {
   return next;
 }
 
+async function ensureDataFiles() {
+  const cardsPath = path.join(PRIVATE_DIR, "cards.json");
+  const columnsPath = path.join(PRIVATE_DIR, "columns.json");
+  const cardsSamplePath = path.join(ROOT, "private", "cards_sample.json");
+  const columnsSamplePath = path.join(ROOT, "private", "columns_sample.json");
+
+  // Helper to check existence
+  async function exists(p) {
+    try {
+      await fs.access(p);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // If cards.json is missing, seed from sample
+  if (!(await exists(cardsPath))) {
+    const buf = await fs.readFile(cardsSamplePath);
+    const data = JSON.parse(buf.toString());
+    await writeJson("cards.json", data);
+  }
+
+  // If columns.json is missing, seed from sample
+  if (!(await exists(columnsPath))) {
+    const buf = await fs.readFile(columnsSamplePath);
+    const data = JSON.parse(buf.toString());
+    await writeJson("columns.json", data);
+  }
+}
+
 module.exports = {
   readJson,
   writeJson,
   runExclusive,
   PRIVATE_DIR,
+  ensureDataFiles,
 };
