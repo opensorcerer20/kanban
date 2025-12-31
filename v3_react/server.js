@@ -35,9 +35,12 @@ app.get("/api/cards", async (req, res) => {
 // Payload: { cardIds: string[] }
 app.put("/api/columns/:columnId/order", async (req, res) => {
   const { columnId } = req.params;
-  const { cardIds } = req.body || {};
+  const { cardIds, movedCardId } = req.body || {};
   if (!Array.isArray(cardIds)) {
     return res.status(400).json({ error: "cardIds must be an array" });
+  }
+  if (movedCardId === undefined || movedCardId === null) {
+    return res.status(400).json({ error: "movedCardId is required" });
   }
 
   try {
@@ -45,13 +48,17 @@ app.put("/api/columns/:columnId/order", async (req, res) => {
       const cards = await readJson("cards.json");
       const byId = new Map(cards.map((c) => [String(c.id), c]));
 
+      const movedIdStr = movedCardId != null ? String(movedCardId) : null;
+
       // Move each card in the list to the target column and set ascending sort order
       cardIds.forEach((id, idx) => {
         const card = byId.get(String(id));
         if (card) {
           card.columnId = columnId;
           card.columnSortOrder = idx + 1;
-          card.updatedAt = new Date().toISOString();
+          if (movedIdStr && String(id) === movedIdStr) {
+            card.updatedAt = new Date().toISOString();
+          }
         }
       });
 

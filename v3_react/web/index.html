@@ -93,6 +93,7 @@
       (function () {
         const board = document.getElementById("board");
         let dragSourceColumnId = null;
+        let dragCardId = null;
         // Per-column client-side request queues to avoid overlapping writes
         const requestQueues = new Map();
 
@@ -168,6 +169,7 @@
               card.classList.add("dragging");
               const parent = card.closest(".column");
               dragSourceColumnId = parent ? parent.dataset.columnId : null;
+              dragCardId = card.dataset.cardId || null;
               if (e.dataTransfer) {
                 e.dataTransfer.setData("text/plain", "");
                 e.dataTransfer.effectAllowed = "move";
@@ -176,6 +178,7 @@
             card.addEventListener("dragend", () => {
               card.classList.remove("dragging");
               updateCount(columnEl);
+              dragCardId = null;
             });
           });
 
@@ -212,12 +215,12 @@
                 )
               : null;
 
-            enqueuePersist(destId, destIds).catch((err) =>
+            enqueuePersist(destId, destIds, dragCardId).catch((err) =>
               console.error("Persist dest failed", err)
             );
             if (srcEl && dragSourceColumnId !== destId && srcIds) {
-              enqueuePersist(dragSourceColumnId, srcIds).catch((err) =>
-                console.error("Persist src failed", err)
+              enqueuePersist(dragSourceColumnId, srcIds, dragCardId).catch(
+                (err) => console.error("Persist src failed", err)
               );
             }
           });
@@ -273,13 +276,13 @@
           console.error("Failed to load data", err);
         });
 
-        async function persistColumnOrder(columnId, cardIds) {
+        async function persistColumnOrder(columnId, cardIds, movedCardId) {
           const res = await fetch(
             `/api/columns/${encodeURIComponent(columnId)}/order`,
             {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ cardIds }),
+              body: JSON.stringify({ cardIds, movedCardId }),
             }
           );
           if (!res.ok) {
@@ -290,11 +293,13 @@
         }
 
         // Queue requests per column and add retry with exponential backoff
-        function enqueuePersist(columnId, cardIds) {
+        function enqueuePersist(columnId, cardIds, movedCardId) {
           const key = String(columnId);
           const prev = requestQueues.get(key) || Promise.resolve();
           const next = prev.then(() =>
-            retryPersist(() => persistColumnOrder(columnId, cardIds))
+            retryPersist(() =>
+              persistColumnOrder(columnId, cardIds, movedCardId)
+            )
           );
           requestQueues.set(
             key,

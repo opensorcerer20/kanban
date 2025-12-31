@@ -71,7 +71,7 @@ describe("API endpoints", () => {
 
     const res = await request(app)
       .put("/api/columns/col-feedback/order")
-      .send({ cardIds: moveIds })
+      .send({ cardIds: moveIds, movedCardId: moveIds[0] })
       .set("Content-Type", "application/json");
 
     expect(res.status).toBe(200);
@@ -85,9 +85,35 @@ describe("API endpoints", () => {
       expect(card.columnSortOrder).toBe(idx + 1);
     });
 
+    // Only the moved card's updatedAt changes
+    const beforeMoved = before.find((c) => String(c.id) === String(moveIds[0]));
+    const afterMoved = after.find((c) => String(c.id) === String(moveIds[0]));
+    expect(afterMoved.updatedAt).not.toBe(beforeMoved.updatedAt);
+    const beforeUnmoved = before.find(
+      (c) => String(c.id) === String(moveIds[1])
+    );
+    const afterUnmoved = after.find((c) => String(c.id) === String(moveIds[1]));
+    expect(afterUnmoved.updatedAt).toBe(beforeUnmoved.updatedAt);
+
     // Confirm remaining ready cards still in col-ready
     const stillReady = after.filter((c) => c.columnId === "col-ready");
     expect(stillReady.length).toBeGreaterThan(0);
+  });
+
+  test("PUT order rejects missing movedCardId", async () => {
+    const before = readJson("cards.json");
+    const readyCards = before
+      .filter((c) => c.columnId === "col-ready")
+      .map((c) => c.id);
+    const moveIds = readyCards.slice(0, 1);
+
+    const res = await request(app)
+      .put("/api/columns/col-feedback/order")
+      .send({ cardIds: moveIds })
+      .set("Content-Type", "application/json");
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty("error");
   });
 
   test("serializes concurrent writes to cards.json", async () => {
@@ -104,11 +130,11 @@ describe("API endpoints", () => {
     const [res1, res2] = await Promise.all([
       request(app)
         .put("/api/columns/col-feedback/order")
-        .send({ cardIds: [a] })
+        .send({ cardIds: [a], movedCardId: a })
         .set("Content-Type", "application/json"),
       request(app)
         .put("/api/columns/col-complete/order")
-        .send({ cardIds: [b] })
+        .send({ cardIds: [b], movedCardId: b })
         .set("Content-Type", "application/json"),
     ]);
 
