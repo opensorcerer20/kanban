@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kanban - Ready</title>
+    <style>
+      :root {
+        --bg: #0f172a; /* slate-900 */
+        --panel: #111827; /* gray-900 */
+        --card: #1f2937; /* gray-800 */
+        --text: #e5e7eb; /* gray-200 */
+        --muted: #9ca3af; /* gray-400 */
+        --accent: #3b82f6; /* blue-500 */
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 24px;
+        background: var(--bg);
+        color: var(--text);
+        font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu,
+          "Helvetica Neue", Arial, sans-serif;
+      }
+
+      .board {
+        display: flex;
+        gap: 24px;
+      }
+
+      .column {
+        width: 250px;
+        background: var(--panel);
+        border-radius: 10px;
+        padding: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .column-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+
+      .column-title {
+        font-weight: 600;
+        letter-spacing: 0.2px;
+        margin: 0;
+      }
+
+      .count {
+        background: var(--card);
+        color: var(--muted);
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .card {
+        background: var(--card);
+        border-radius: 8px;
+        padding: 10px;
+        margin: 8px 0;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .card.dragging {
+        opacity: 0.6;
+        outline: 1px dashed rgba(255, 255, 255, 0.2);
+      }
+
+      .card-title {
+        font-weight: 600;
+        margin: 0 0 4px 0;
+      }
+
+      .card-desc {
+        color: var(--muted);
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="board">
+      <section class="column" aria-label="Ready column">
+        <div class="column-header">
+          <h2 class="column-title">Ready</h2>
+          <span class="count" id="cardCount">3</span>
+        </div>
+
+        <article class="card">
+          <h3 class="card-title">Set up project</h3>
+          <p class="card-desc">Initialize repo and configure tooling.</p>
+        </article>
+
+        <article class="card">
+          <h3 class="card-title">Design schema</h3>
+          <p class="card-desc">Define cards and columns structure.</p>
+        </article>
+
+        <article class="card">
+          <h3 class="card-title">Create UI</h3>
+          <p class="card-desc">Build single-column layout with styling.</p>
+        </article>
+      </section>
+      <section class="column" aria-label="Feedback column">
+        <div class="column-header">
+          <h2 class="column-title">Feedback</h2>
+          <span class="count">3</span>
+        </div>
+
+        <article class="card">
+          <h3 class="card-title">Collect user feedback</h3>
+          <p class="card-desc">Gather comments from early testers.</p>
+        </article>
+
+        <article class="card">
+          <h3 class="card-title">Review bug reports</h3>
+          <p class="card-desc">Triaging issues from recent release.</p>
+        </article>
+
+        <article class="card">
+          <h3 class="card-title">Prepare release notes</h3>
+          <p class="card-desc">Summarize changes and highlights.</p>
+        </article>
+      </section>
+    </div>
+    <script>
+      (function () {
+        const columns = document.querySelectorAll(".column");
+
+        function updateCount(column) {
+          const total = column.querySelectorAll(".card").length;
+          const countEl = column.querySelector(".count");
+          if (countEl) countEl.textContent = String(total);
+        }
+
+        function updateAllCounts() {
+          columns.forEach(updateCount);
+        }
+
+        function getDragAfterElement(container, y) {
+          const cards = [...container.querySelectorAll(".card:not(.dragging)")];
+          return (
+            cards
+              .map((el) => {
+                const rect = el.getBoundingClientRect();
+                const offset = y - rect.top - rect.height / 2;
+                return { offset, el };
+              })
+              .filter((x) => x.offset < 0)
+              // Sort by offset descending to find the element closest above the pointer
+              .sort((a, b) => b.offset - a.offset)[0]?.el || null
+          );
+        }
+
+        function initColumn(column) {
+          const cards = column.querySelectorAll(".card");
+          cards.forEach((card) => {
+            card.setAttribute("draggable", "true");
+
+            card.addEventListener("dragstart", (e) => {
+              card.classList.add("dragging");
+              if (e.dataTransfer) {
+                e.dataTransfer.setData("text/plain", "");
+                e.dataTransfer.effectAllowed = "move";
+              }
+            });
+
+            card.addEventListener("dragend", () => {
+              card.classList.remove("dragging");
+              updateCount(column);
+            });
+          });
+
+          column.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            const dragging = document.querySelector(".card.dragging");
+            if (!dragging) return;
+            const after = getDragAfterElement(column, e.clientY);
+            if (after == null) {
+              column.appendChild(dragging);
+            } else {
+              column.insertBefore(dragging, after);
+            }
+          });
+
+          column.addEventListener("drop", (e) => {
+            e.preventDefault();
+            updateAllCounts();
+          });
+
+          updateCount(column);
+        }
+
+        columns.forEach(initColumn);
+      })();
+    </script>
+  </body>
+</html>
