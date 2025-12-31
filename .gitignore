@@ -1,3 +1,6 @@
 .DS_Store
 imported_cards.json
 v3_react/node_modules
+v3_react/cards.json
+v3_react/columns.json
+v3_react/temp
