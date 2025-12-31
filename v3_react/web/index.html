@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Kanban - Ready</title>
+    <title>Kanban</title>
     <style>
       :root {
         --bg: #0f172a; /* slate-900 */
@@ -88,62 +88,59 @@
     </style>
   </head>
   <body>
-    <div class="board">
-      <section class="column" aria-label="Ready column">
-        <div class="column-header">
-          <h2 class="column-title">Ready</h2>
-          <span class="count" id="cardCount">3</span>
-        </div>
-
-        <article class="card">
-          <h3 class="card-title">Set up project</h3>
-          <p class="card-desc">Initialize repo and configure tooling.</p>
-        </article>
-
-        <article class="card">
-          <h3 class="card-title">Design schema</h3>
-          <p class="card-desc">Define cards and columns structure.</p>
-        </article>
-
-        <article class="card">
-          <h3 class="card-title">Create UI</h3>
-          <p class="card-desc">Build single-column layout with styling.</p>
-        </article>
-      </section>
-      <section class="column" aria-label="Feedback column">
-        <div class="column-header">
-          <h2 class="column-title">Feedback</h2>
-          <span class="count">3</span>
-        </div>
-
-        <article class="card">
-          <h3 class="card-title">Collect user feedback</h3>
-          <p class="card-desc">Gather comments from early testers.</p>
-        </article>
-
-        <article class="card">
-          <h3 class="card-title">Review bug reports</h3>
-          <p class="card-desc">Triaging issues from recent release.</p>
-        </article>
-
-        <article class="card">
-          <h3 class="card-title">Prepare release notes</h3>
-          <p class="card-desc">Summarize changes and highlights.</p>
-        </article>
-      </section>
-    </div>
+    <div class="board" id="board"></div>
     <script>
       (function () {
-        const columns = document.querySelectorAll(".column");
+        const board = document.getElementById("board");
 
-        function updateCount(column) {
-          const total = column.querySelectorAll(".card").length;
-          const countEl = column.querySelector(".count");
+        function createColumnEl(column) {
+          const section = document.createElement("section");
+          section.className = "column";
+          section.setAttribute("aria-label", `${column.title} column`);
+          section.dataset.columnId = column.id;
+
+          const header = document.createElement("div");
+          header.className = "column-header";
+          const h2 = document.createElement("h2");
+          h2.className = "column-title";
+          h2.textContent = column.title;
+          const count = document.createElement("span");
+          count.className = "count";
+          count.textContent = "0";
+          header.appendChild(h2);
+          header.appendChild(count);
+
+          section.appendChild(header);
+          return section;
+        }
+
+        function createCardEl(card) {
+          const article = document.createElement("article");
+          article.className = "card";
+          article.dataset.cardId = card.id;
+
+          const title = document.createElement("h3");
+          title.className = "card-title";
+          title.textContent = card.title;
+
+          const desc = document.createElement("p");
+          desc.className = "card-desc";
+          desc.textContent = card.description || "";
+
+          article.appendChild(title);
+          article.appendChild(desc);
+          return article;
+        }
+
+        function updateCount(columnEl) {
+          const total = columnEl.querySelectorAll(".card").length;
+          const countEl = columnEl.querySelector(".count");
           if (countEl) countEl.textContent = String(total);
         }
 
         function updateAllCounts() {
-          columns.forEach(updateCount);
+          const cols = board.querySelectorAll(".column");
+          cols.forEach(updateCount);
         }
 
         function getDragAfterElement(container, y) {
@@ -156,16 +153,14 @@
                 return { offset, el };
               })
               .filter((x) => x.offset < 0)
-              // Sort by offset descending to find the element closest above the pointer
               .sort((a, b) => b.offset - a.offset)[0]?.el || null
           );
         }
 
-        function initColumn(column) {
-          const cards = column.querySelectorAll(".card");
+        function initColumn(columnEl) {
+          const cards = columnEl.querySelectorAll(".card");
           cards.forEach((card) => {
             card.setAttribute("draggable", "true");
-
             card.addEventListener("dragstart", (e) => {
               card.classList.add("dragging");
               if (e.dataTransfer) {
@@ -173,34 +168,63 @@
                 e.dataTransfer.effectAllowed = "move";
               }
             });
-
             card.addEventListener("dragend", () => {
               card.classList.remove("dragging");
-              updateCount(column);
+              updateCount(columnEl);
             });
           });
 
-          column.addEventListener("dragover", (e) => {
+          columnEl.addEventListener("dragover", (e) => {
             e.preventDefault();
             const dragging = document.querySelector(".card.dragging");
             if (!dragging) return;
-            const after = getDragAfterElement(column, e.clientY);
+            const after = getDragAfterElement(columnEl, e.clientY);
             if (after == null) {
-              column.appendChild(dragging);
+              columnEl.appendChild(dragging);
             } else {
-              column.insertBefore(dragging, after);
+              columnEl.insertBefore(dragging, after);
             }
           });
 
-          column.addEventListener("drop", (e) => {
+          columnEl.addEventListener("drop", (e) => {
             e.preventDefault();
             updateAllCounts();
           });
 
-          updateCount(column);
+          updateCount(columnEl);
         }
 
-        columns.forEach(initColumn);
+        async function loadAndRender() {
+          const [columnsRes, cardsRes] = await Promise.all([
+            fetch("/api/columns"),
+            fetch("/api/cards"),
+          ]);
+          const [columns, cards] = await Promise.all([
+            columnsRes.json(),
+            cardsRes.json(),
+          ]);
+
+          const columnMap = new Map();
+          columns.forEach((c) => {
+            const el = createColumnEl(c);
+            board.appendChild(el);
+            columnMap.set(c.id, el);
+          });
+
+          cards.forEach((card) => {
+            const columnEl = columnMap.get(card.columnId);
+            if (!columnEl) return;
+            const cardEl = createCardEl(card);
+            columnEl.appendChild(cardEl);
+          });
+
+          board.querySelectorAll(".column").forEach(initColumn);
+          updateAllCounts();
+        }
+
+        loadAndRender().catch((err) => {
+          console.error("Failed to load data", err);
+        });
       })();
     </script>
   </body>
