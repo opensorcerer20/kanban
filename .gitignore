@@ -4,3 +4,6 @@ v3_react/node_modules
 v3_react/private/cards.json
 v3_react/private/columns.json
 v3_react/temp
+v3_react/web/node_modules
+v3_react/web/dist
+v3_react/.env
