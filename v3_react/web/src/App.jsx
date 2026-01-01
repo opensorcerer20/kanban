@@ -1,6 +1,9 @@
 import './styles.css';
 
-import { useState } from 'react';
+import {
+  useEffect,
+  useState,
+} from 'react';
 
 import {
   closestCorners,
@@ -20,38 +23,41 @@ import Column from './components/Column';
 // credit: Kazuya-Oki dnd kit kanban board: https://codesandbox.io/p/sandbox/dnd-kit-kanban-board-1df69n
 
 export default function App() {
-  // 仮データを定義
-  const data = [
-    {
-      id: "Column1",
-      title: "Column1",
-      cards: [
-        {
-          id: "Card1",
-          title: "Card1"
-        },
-        {
-          id: "Card2",
-          title: "Card2"
+  const [columns, setColumns] = useState([]);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const [colsRes, cardsRes] = await Promise.all([
+          fetch('/api/columns'),
+          fetch('/api/cards'),
+        ]);
+        if (!colsRes.ok) throw new Error('Failed to load columns');
+        if (!cardsRes.ok) throw new Error('Failed to load cards');
+        const cols = await colsRes.json();
+        const cards = await cardsRes.json();
+
+        const byColumn = new Map(cols.map(c => [String(c.id), { id: String(c.id), title: c.title, cards: [] }]));
+        cards.forEach(card => {
+          const col = byColumn.get(String(card.columnId));
+          if (col) {
+            col.cards.push({ id: String(card.id), title: card.title || String(card.id), columnSortOrder: card.columnSortOrder ?? 0 });
+          }
+        });
+        for (const col of byColumn.values()) {
+          col.cards.sort((a, b) => (a.columnSortOrder ?? 0) - (b.columnSortOrder ?? 0));
+          col.cards = col.cards.map(({ columnSortOrder, ...rest }) => rest);
         }
-      ]
-    },
-    {
-      id: "Column2",
-      title: "Column2",
-      cards: [
-        {
-          id: "Card3",
-          title: "Card3"
-        },
-        {
-          id: "Card4",
-          title: "Card4"
-        }
-      ]
+        if (!cancelled) setColumns(Array.from(byColumn.values()));
+      } catch (e) {
+        if (!cancelled) setError(e.message || String(e));
+      }
     }
-  ];
-  const [columns, setColumns] = useState(data);
+    load();
+    return () => { cancelled = true; };
+  }, []);
 
   const findColumn = (unique) => {
     if (!unique) {
@@ -152,6 +158,7 @@ export default function App() {
         className="App"
         style={{ display: "flex", flexDirection: "row", padding: "20px" }}
       >
+        {error && <div style={{ color: '#ff6b6b' }}>Error: {error}</div>}
         {columns.map((column) => (
           <Column
             key={column.id}
